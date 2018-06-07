@@ -1,0 +1,50 @@
+os: Visual Studio 2017
+
+platform:
+  - x64
+
+branches:
+  only:
+  - master
+
+version: '{build}-{branch}'
+
+cache:
+  - "node_modules"
+  - "%LOCALAPPDATA%\\Yarn"
+
+init:
+  - cmd: echo 🚦 Authorizing Build
+  - ps: if ($env:OS -eq "Windows_NT" -And $env:DEPLOY_WINDOWS -eq "0") { $host.SetShouldExit(0) }
+  - cmd: git config --global core.autocrlf input
+
+install:
+  - cmd: echo 🔧 Setting up Node
+  - ps: Install-Product node 10.0.0
+  - cmd: npm --global update npm
+  - cmd: npm --global install yarn
+
+before_build:
+  - cmd: echo 📥 Installing Dependencies
+  - cmd: yarn install
+
+build_script:
+  - cmd: echo 📦 Building
+  - cmd: npm run build --metadata
+
+deploy_script:
+  - cmd: echo 📮 Deploying to GitHub
+  - cmd: npm run deploy
+
+artifacts:
+  - path: build\output\*.exe
+
+notifications:
+  - provider: Webhook
+    url: https://webhooks.gitter.im/e/f29f98b58ec67b5f0f59
+    method: GET
+    on_build_success: true
+    on_build_failure: true
+    on_build_status_changed: true
+
+test: off
